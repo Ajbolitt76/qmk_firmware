@@ -15,19 +15,55 @@
  */
 
 #include "keychron_common.h"
+#include "mousekey.h"
+#include "report.h"
 #include "sync_timer.h"
 
-bool is_siri_active = false;
-uint32_t siri_timer = 0;
+const int JIG_STEP_SIZE  = 10;
+bool      is_siri_active = false;
+uint32_t  siri_timer     = 0;
 
-key_combination_t key_comb_list[4] = {
-    {2, {KC_LWIN, KC_TAB}},
-    {2, {KC_LWIN, KC_E}},
-    {3, {KC_LSFT, KC_LCMD, KC_4}},
-    {2, {KC_LWIN, KC_C}}
-};
+bool     is_mouse_jigler_active = false;
+uint32_t mouse_jigler_timer     = 0;
+uint8_t  state                  = 0;
 
-static uint8_t mac_keycode[4] = { KC_LOPT, KC_ROPT, KC_LCMD, KC_RCMD };
+key_combination_t key_comb_list[4] = {{2, {KC_LWIN, KC_TAB}}, {2, {KC_LWIN, KC_E}}, {3, {KC_LSFT, KC_LCMD, KC_4}}, {2, {KC_LWIN, KC_C}}};
+
+static uint8_t mac_keycode[4] = {KC_LOPT, KC_ROPT, KC_LCMD, KC_RCMD};
+
+report_mouse_t mousekey_task_keychron(report_mouse_t mouse_report) {
+    if (is_mouse_jigler_active && sync_timer_elapsed32(mouse_jigler_timer) >= 500) {
+        mouse_jigler_timer = sync_timer_read32();
+
+        switch (state) {
+            case 0:
+                mouse_report.x = JIG_STEP_SIZE;
+                mouse_report.y = 0;
+                state++;
+                break;
+            case 1:
+                mouse_report.x = 0;
+                mouse_report.y = JIG_STEP_SIZE;
+                state++;
+                break;
+            case 2:
+                mouse_report.x = -JIG_STEP_SIZE;
+                mouse_report.y = 0;
+                state++;
+                break;
+            case 3:
+                mouse_report.x = 0;
+                mouse_report.y = -JIG_STEP_SIZE;
+                state++;
+                break;
+            default:
+                mouse_report.x = 0;
+                mouse_report.y = 0;
+                state          = 0;
+        }
+    }
+    return mouse_report;
+}
 
 void housekeeping_task_keychron(void) {
     if (is_siri_active) {
@@ -47,14 +83,14 @@ bool process_record_keychron(uint16_t keycode, keyrecord_t *record) {
             } else {
                 unregister_code(KC_MISSION_CONTROL);
             }
-            return false;  // Skip all further processing of this key
+            return false; // Skip all further processing of this key
         case QK_KB_1:
             if (record->event.pressed) {
                 register_code(KC_LAUNCHPAD);
             } else {
                 unregister_code(KC_LAUNCHPAD);
             }
-            return false;  // Skip all further processing of this key
+            return false; // Skip all further processing of this key
         case KC_LOPTN:
         case KC_ROPTN:
         case KC_LCMMD:
@@ -64,7 +100,7 @@ bool process_record_keychron(uint16_t keycode, keyrecord_t *record) {
             } else {
                 unregister_code(mac_keycode[keycode - KC_LOPTN]);
             }
-            return false;  // Skip all further processing of this key
+            return false; // Skip all further processing of this key
         case KC_SIRI:
             if (record->event.pressed) {
                 if (!is_siri_active) {
@@ -76,7 +112,7 @@ bool process_record_keychron(uint16_t keycode, keyrecord_t *record) {
             } else {
                 // Do something else when release
             }
-            return false;  // Skip all further processing of this key
+            return false; // Skip all further processing of this key
         case KC_TASK:
         case KC_FLXP:
         case KC_SNAP:
@@ -90,8 +126,14 @@ bool process_record_keychron(uint16_t keycode, keyrecord_t *record) {
                     unregister_code(key_comb_list[keycode - KC_TASK].keycode[i]);
                 }
             }
-            return false;  // Skip all further processing of this key
+            return false; // Skip all further processing of this key
+        case KC_TG_JIGLER:
+            if (record->event.pressed) {
+                mouse_jigler_timer     = sync_timer_read32();
+                is_mouse_jigler_active = !is_mouse_jigler_active;
+            }
+            return false;
         default:
-            return true;  // Process all other keycodes normally
+            return true; // Process all other keycodes normally
     }
 }

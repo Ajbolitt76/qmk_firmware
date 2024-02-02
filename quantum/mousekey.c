@@ -377,11 +377,17 @@ void mousekey_task(void) {
         }
     }
 
+    mouse_report = mousekey_task_user(mouse_report);
+
     if (has_mouse_report_changed(&mouse_report, &tmpmr) || should_mousekey_report_send(&mouse_report)) {
         mousekey_send();
     }
     // save the state for later
     memcpy(&mouse_report, &tmpmr, sizeof(tmpmr));
+}
+
+__attribute__((weak)) report_mouse_t mousekey_task_user(report_mouse_t mouse_report) {
+    return mouse_report;
 }
 
 void mousekey_on(uint8_t code) {
@@ -673,6 +679,10 @@ static void mousekey_debug(void) {
 
 report_mouse_t mousekey_get_report(void) {
     return mouse_report;
+}
+
+report_mouse_t* mousekey_get_report_p(void){
+    return &mouse_report;
 }
 
 bool should_mousekey_report_send(report_mouse_t *mouse_report) {

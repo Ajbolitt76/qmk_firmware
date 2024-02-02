@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "action.h"
+#include "report.h"
 
 #ifdef VIA_ENABLE
 #    include "via.h"
@@ -35,7 +36,8 @@ enum custom_keycodes {
     KC_TASK_VIEW,
     KC_FILE_EXPLORER,
     KC_SCREEN_SHOT,
-    KC_CORTANA
+    KC_CORTANA,
+    KC_TG_JIGLER
 };
 
 #define KC_TASK KC_TASK_VIEW
@@ -48,5 +50,6 @@ typedef struct PACKED {
     uint8_t keycode[3];
 } key_combination_t;
 
+report_mouse_t mousekey_task_keychron(report_mouse_t mouse_report);
 void housekeeping_task_keychron(void);
 bool process_record_keychron(uint16_t keycode, keyrecord_t *record);
